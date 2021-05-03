@@ -5,37 +5,53 @@
 MPU6050 mpu;
 int16_t ax, ay, az;
 struct accVect last_acc;
+struct accVect acc;
+
+int16_t gx, gy, gz;
+struct gyroVect gyro;
+long time_past = 0;
+long time_present = 0;
+
+double g_roll = 0, g_pitch=0;
 
 void sensor_init(){
 	Wire.begin();                      // Initialize comunication
 	mpu.initialize();
 //	setMPUOffset();
 	mpu.setFullScaleAccelRange(RANGE);// 3 = +/-16g
-	
-//	pinMode(trigPin, OUTPUT);
-//	pinMode(echoPin, INPUT);
+	mpu.setFullScaleGyroRange(1);// 1 = +/-500 deg/s
+
 //  Serial.println("Sensors Set-up Ready...");
 }
-/*
-int distance(){
-	digitalWrite(trigPin, LOW);
-	delayMicroseconds(10);
-	digitalWrite(trigPin, HIGH);
-	duration = pulseIn(echoPin, HIGH);
+
+bool is_accident_detected(){
+  getMotion();
+/*////////////////////////////////////////////////////////////////
+  double acc_roll,acc_pitch;
+  acc_pitch = 180 * atan2(acc.ax, sqrt(acc.ay*acc.ay + acc.az*acc.az))/PI;
+  acc_roll = 180 * atan2(acc.ay, sqrt(acc.ax*acc.ax + acc.az*acc.az))/PI;
+
+  double delta_roll,delta_pitch;
+  delta_roll = (gyro.gx)*(time_present-time_past)/(2000);
+  g_roll += (abs(delta_roll) > 1)?delta_roll:0;
+  delta_pitch = (gyro.gy)*(time_present-time_past)/(2000);
+  g_pitch += (abs(delta_pitch) > 1)?delta_pitch:0;
   
-//	Convert the time*speed to distance
-	cm = (duration/2) * 0.0343;     // Divide by 29.1 or multiply by 0.0343
-  
-	Serial.print(cm);
-	Serial.println("cm");
-}
-*/
-bool accident_detector(struct accVect acc){
-//  Serial.print(acc.ax-last_acc.ax);
-//  Serial.print("\t");
-//  Serial.print(acc.ay-last_acc.ay);
-//  Serial.print("\t");
-//  Serial.print(acc.az-last_acc.az);
+//  double roll, pitch;
+//  pitch = 0.96*g_pitch + 0.04*acc_pitch;
+//  roll = 0.96*g_roll + 0.04*acc_roll;
+  Serial.print(delta_roll);
+  Serial.print("\t");
+  Serial.print(delta_pitch);
+  Serial.print("\t");
+  Serial.print(g_roll);
+  Serial.print("\t");
+  Serial.println(g_pitch);
+//  if(abs(roll) > 40 || abs(pitch) > 40){
+//    return true;
+//  }
+//////////////////////////////////////////////////////////*/
+  Serial.println("Delta_ax: "+String(acc.ax-last_acc.ax,3)+"\tDelta_ay: "+String(acc.ay-last_acc.ay,3)+"\tDelta_az: "+String(acc.az-last_acc.az,3));
   if(abs(acc.ax-last_acc.ax)>LIMIT || abs(acc.ay-last_acc.ay)>LIMIT || abs(acc.az-last_acc.az) > LIMIT){
     return true;
   }
@@ -45,14 +61,18 @@ bool accident_detector(struct accVect acc){
 	return false;
 }
 
-struct accVect getAcc(){
-	mpu.getAcceleration(&ax, &ay, &az);
-  struct accVect acc;
+void getMotion(){
+  time_past = time_present;
+	mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+	time_present = millis();
   acc.ax = ax/DIVIDER;
   acc.ay = ay/DIVIDER;
   acc.az = az/DIVIDER;
-  return acc;
-//	return sqrt((ax*ax)+(ay*ay)+(az*az)) / DIVIDER;
+  gyro.gx = gx/65.5;
+  gyro.gy = gy/65.5;
+  gyro.gz = gz/65.5;
+  Serial.println("ax: "+String(acc.ax,3)+"\tay: "+String(acc.ay,3)+"\taz: "+String(acc.az,3)+
+                "\tgx: "+String(gyro.gx,3)+"\tgy: "+String(gyro.gy,3)+"\tgz: "+String(gyro.gz,3));
 }
 
 /*

@@ -40,7 +40,6 @@ std::string gprmcParser(const String& data){
 		  return NULL_COORDINATE;
 		}
 		coord+=String(deg,4);//+lonDir;
-		coord = "0"+String(coord.length(),HEX)+coord;
 		return std::string(coord.c_str());
 	}
 	return NULL_COORDINATE;
@@ -53,6 +52,9 @@ std::string getGPS(){
 			gpsData+=((char)(Serial2.read()));
 		}
 	}
+	gpsData = "$GPRMC,135856.00,A,2828.76829,N,07700.49989,E,1.659,232.67,0305";
+//  Serial.print("GPS Data: ");
+//  Serial.println(gpsData);
 	std::string new_loc = gprmcParser(gpsData);
 	last_loc = (new_loc != NULL_COORDINATE)?new_loc:last_loc;
 	return last_loc;
